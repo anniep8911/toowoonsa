@@ -214,6 +214,11 @@ header h1 {
   text-align: center;
 }
 
+
+.result-badge.show{
+  opacity: 1;
+  z-index: 2;
+}
 /* 날라가는 애니메이션 - 맞춤 */
 @keyframes fly-right {
   0% {
