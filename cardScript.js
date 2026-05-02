@@ -355,3 +355,20 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 window.restart = () => { localStorage.removeItem(STORAGE_KEY); location.reload(); };
+
+window.fixStorage = () => {
+    const KEY = 'quiz_system_v21_issue_reporter';
+    const data = JSON.parse(localStorage.getItem(KEY));
+    if (!data) { alert('저장 데이터 없음'); return; }
+    
+    data.quizStack = data.quizStack.map(item => {
+        if (Array.isArray(item.answer)) {
+            item.answer = item.answer.map(a => String(a));
+        }
+        return item;
+    });
+    
+    localStorage.setItem(KEY, JSON.stringify(data));
+    alert('수정 완료! 새로고침합니다.');
+    location.reload();
+};
