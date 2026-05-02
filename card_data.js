@@ -803,7 +803,7 @@ export const que = [
     }, {
         type: "blank",
         main: "자연환경 보전지역 내 물건 적치 허가 요건",
-        sentence: "자연환경 보전지역에 물건을 1개월 이상 쌓아놓을경우 특별시장,광역시장,시장,군수의 허가가 필요하다'",
+        sentence: "자연환경 보전지역에 물건을 1개월 이상 쌓아놓을경우 특별시장,광역시장,시장,군수의 허가가 필요하다",
         answer: ["1개월"]
     }, {
         type: "ox",
@@ -2660,7 +2660,7 @@ export const que = [
         type: "blank",
         main: "국세부과 제척기간",
         sentence: "국세기본법: 국세부과 제척기간은 세목에 상관없이 15년이다",
-        answer: [15]
+        answer: ["15"]
     }, {
         type: "blank",
         main: "법인 분할 의제배당",
