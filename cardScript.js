@@ -59,6 +59,10 @@ function getRandomDistractors(excludeArray, count) {
 function prepareChoices(q) {
     if (q.fixedChoices) return;
 
+    if (Array.isArray(q.answer)) {
+        q.answer = q.answer.map(a => String(a));
+    }
+    
     if (q.type === 'ox') {
         q.fixedChoices = ['O', 'X'];
         q.fixedAnswers = [q.answer];
@@ -344,18 +348,6 @@ window.copyIssueData = (btn) => {
 };
 
 document.addEventListener('DOMContentLoaded', () => {
-    // 🔧 임시 복구 코드
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) {
-        const data = JSON.parse(raw);
-        data.quizStack = data.quizStack.map(item => {
-            if (Array.isArray(item.answer)) {
-                item.answer = item.answer.map(a => String(a));
-            }
-            return item;
-        });
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-    }
     loadProgress();
     renderNextCard();
     document.getElementById('resetBtn').onclick = () => {
