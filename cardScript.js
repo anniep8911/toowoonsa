@@ -24,26 +24,49 @@ function saveProgress() {
 function loadProgress() {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (!saved) return;
-    const data = JSON.parse(saved);
-    correctCount = data.correctCount;
-    totalAttempts = data.totalAttempts;
-    wrongCounts = data.wrongCounts || {};
-    const savedStack = data.quizStack;
-    const sIdx = data.currentIdx;
-    const remaining = savedStack.slice(sIdx);
-    if (remaining.length > 0) {
-        const nowCard = remaining[0]; 
-        const others = remaining.slice(1); 
-        const wrongItems = [];
-        const normalItems = [];
-        const passedMains = new Set(savedStack.slice(0, sIdx).map(m => m.main));
-        others.forEach(item => {
-            if (passedMains.has(item.main)) wrongItems.push(item);
-            else normalItems.push(item);
-        });
-        quizStack = [...wrongItems, nowCard, ...normalItems];
+    
+    try {
+        const data = JSON.parse(saved);
+        correctCount = data.correctCount || 0;
+        totalAttempts = data.totalAttempts || 0;
+        wrongCounts = data.wrongCounts || {};
+        
+        // 1. savedStack이 유효한지 확인하고, 혹시 모를 null 요소를 제거합니다.
+        const savedStack = (data.quizStack || []).filter(item => item !== null);
+        const sIdx = data.currentIdx || 0;
+        
+        const remaining = savedStack.slice(sIdx);
+        
+        if (remaining.length > 0) {
+            const nowCard = remaining[0]; 
+            const others = remaining.slice(1); 
+            
+            const wrongItems = [];
+            const normalItems = [];
+            
+            // 2. map과 forEach에서 요소가 존재할 때만 .main에 접근하도록 안전장치 추가
+            const passedMains = new Set(
+                savedStack.slice(0, sIdx)
+                    .filter(m => m && m.main) // m이 존재하고 main 속성이 있을 때만
+                    .map(m => m.main)
+            );
+            
+            others.forEach(item => {
+                // item이 null이 아닌지 체크
+                if (item && item.main && passedMains.has(item.main)) {
+                    wrongItems.push(item);
+                } else if (item) {
+                    normalItems.push(item);
+                }
+            });
+            
+            quizStack = [...wrongItems, nowCard, ...normalItems].filter(q => q !== undefined);
+        }
+        currentIdx = 0;
+    } catch (e) {
+        console.error("데이터 로드 중 오류 발생:", e);
+        localStorage.removeItem(STORAGE_KEY); // 데이터가 오염되었다면 초기화 고려
     }
-    currentIdx = 0;
 }
 
 // --- 2. 보기 생성 엔진 ---
