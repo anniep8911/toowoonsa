@@ -5765,5 +5765,42 @@ export const que = [
         sentence: "GNI: 한나라 국민이 생산활동에 참여하여 받은 대가의 합계",
         answer: ["GNI"]
     },
+    {
+        type: "blank",
+        main: "신뢰기준 VaR",
+        sentence: "95%기준 신뢰수준 VaR : 1.65 / 99%기준 신뢰수준 VaR : 2.33",
+        answer: ["1.65", "2.33"]
+    },
+    {
+        type: "blank",
+        main: "VaR구하기",
+        sentence: "상관계수 0 일때, 구성 자산들이 각각 VaR 3억, VaR 4억이면 포트폴리오 전체 VaR은 5억이다.",
+        answer: ["5"]
+    },
+    {
+        type: "blank",
+        main: "VaR구하기",
+        sentence: "상관계수 1 일때, 구성 자산들이 각각 VaR 3억, VaR 4억이면 포트폴리오 전체 VaR은 7억이다.",
+        answer: ["7"]
+    },
+    {
+        type: "blank",
+        main: "VaR구하기",
+        sentence: "상관계수 -1 일때, 구성 자산들이 각각 VaR 3억, VaR 4억이면 포트폴리오 전체 VaR은 1억이다.",
+        answer: ["1"]
+    },
+    {
+        type: "blank",
+        main: "콜옵션",
+        sentence: "콜옵션 가치 : 현재가 - 행사가",
+        answer: ["현재가", "행사가"]
+    },
+    {
+        type: "blank",
+        main: "풋옵션",
+        sentence: "풋옵션 가치 : 행사가 - 현재가",
+        answer: ["행사가", "현재가"]
+    }
+    
 
 ]
