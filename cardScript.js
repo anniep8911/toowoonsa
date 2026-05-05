@@ -257,7 +257,7 @@ function renderNextCard() {
     issueLabel.style.fontSize = '12px';
     issueLabel.style.color = '#888';
     issueLabel.style.cursor = 'pointer';
-    // issueLabel.innerHTML = `<input type="checkbox" id="issueChk"> 이슈문제`;
+    issueLabel.innerHTML = `<input type="checkbox" id="issueChk" style="display:none;">`;
     const chk = issueLabel.querySelector('input');
     if (issueSet.has(q)) chk.checked = true;
     chk.onchange = (e) => {
