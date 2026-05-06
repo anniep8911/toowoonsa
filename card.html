@@ -18,6 +18,10 @@
 </div>
 
 <header>
+  <div class="menu-bar" style="margin-bottom: 10px; display: flex; gap: 10px;">
+    <button id="focusBtn" onclick="toggleFocusMode()" style="flex:1; padding:10px; background:#444; color:#fff; border:none; border-radius:5px;">집중 문제 풀기 (♣3↑)</button>
+    <button id="resetBtn" style="padding:10px; background:#888; color:#fff; border:none; border-radius:5px;">기록 리셋</button>
+  </div>
   <div class="progress-bar-wrap">
     <div class="progress-bar" id="progressBar" style="width:0%"></div>
   </div>
@@ -33,6 +37,7 @@
   <h2 id="doneTitle">완료!</h2>
   <button class="restart-btn" onclick="restart()">다시 풀기</button>
 </div>
+
 
 <div class="score-row">
   <div class="score-pill o">⭕ <span id="correctCount">0</span></div>

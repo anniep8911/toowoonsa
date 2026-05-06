@@ -16,7 +16,7 @@ export const que = [
         type: "blank",
         main: "배당소득 수입시기",
         sentence: "무기명주식배당소득: 배당급 지급일이 수입시기로 적용됨",
-        answer: ["배당급", "지급일"]
+        answer: ["배당급", "지급일"],
     },
     {
         type: "blank",
@@ -81,7 +81,7 @@ export const que = [
 
     /* --- 사업 및 양도소득 --- */
     {
-        type: "multi",
+        type: "blank",
         main: "사업소득 확정신고가 필요한경우",
         sentence: "사업소득은 결손발생시 확정신고가 필요하다",
         answer: ["결손발생"]
@@ -126,7 +126,7 @@ export const que = [
         type: "multi",
         main: "증권거래세 과세대상",
         sentence: "증권거래세 과세대상에는 코넥스시장 거래 주권 , 주식으로 대물변제가 포함된다.",
-        answer: ["코넥스시장 거래 주권","증권거래세 과세대상"]
+        answer: ["코넥스시장 거래 주권"]
     },
     {
         type: "blank",
@@ -150,7 +150,7 @@ export const que = [
         type: "blank",
         main: "금융소득 종합과세 산출액",
         sentence: "금융소득 종합과세시 일반 산출액과 비교산출액중 더 큰 금액을 산출한다.",
-        answer: ["더 큰 금액"]
+        answer: [" 일반 산출액","더 큰 금액"]
     },
     {
         type: "blank",
