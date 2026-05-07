@@ -329,9 +329,13 @@ function handleResult(isSuccess, questionData, correctToHighlight, userSelection
         }
         if (!isClearSuccess) {
             correctCount++;
-        } else if (!focusMode) {
+        }
+        if (isClearSuccess && !focusMode) {
             totalQuizCount = Math.max(totalQuizCount - 1, 0);
         }
+        if (counter) counter.textContent = `${correctCount} / ${totalQuizCount}`;
+        if (correctDisplay) correctDisplay.textContent = correctCount;
+        updateUI();
         badge.textContent = '⭕';
         badge.className += ' show';
         
@@ -380,11 +384,10 @@ function handleResult(isSuccess, questionData, correctToHighlight, userSelection
 }
 
 function updateUI() {
-    if (!progressBar || !counter) return;
     const total = typeof totalQuizCount === 'number' ? totalQuizCount : quizStack.length;
     const progress = total === 0 ? 0 : Math.min((correctCount / total) * 100, 100);
-    progressBar.style.width = `${progress}%`;
-    counter.textContent = `${correctCount} / ${total}`;
+    if (progressBar) progressBar.style.width = `${progress}%`;
+    if (counter) counter.textContent = `${correctCount} / ${total}`;
     if (correctDisplay) correctDisplay.textContent = correctCount;
 }
 
