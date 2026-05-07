@@ -1,7 +1,8 @@
 import { que } from './card_data.js';
 
 const STORAGE_KEY = 'quiz_system_v22_final';
-const CLEAR_KEY = 'quiz_clear_list'; 
+const CLEAR_KEY = 'quiz_clear_list';
+const FOCUS_KEY = 'quiz_focus_counts';
 
 let quizStack = [];
 let currentIdx = 0;
@@ -9,6 +10,9 @@ let correctCount = 0;
 let totalAttempts = 0;
 let animating = false;
 let wrongCounts = {}; 
+let totalQuizCount = 0;
+let savedNormalState = null;
+// '확실해!' 목록 (리셋해도 유지됨)
 let clearSet = new Set(JSON.parse(localStorage.getItem(CLEAR_KEY) || '[]')); 
 let focusMode = false; 
 
@@ -20,20 +24,29 @@ const correctDisplay = document.getElementById('correctCount');
 // --- 1. 데이터 관리 로직 ---
 
 function saveProgress() {
-    const data = { quizStack, currentIdx, correctCount, totalAttempts, wrongCounts };
+    const data = { quizStack, currentIdx, correctCount, totalAttempts, wrongCounts, totalQuizCount };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
     localStorage.setItem(CLEAR_KEY, JSON.stringify([...clearSet]));
+    localStorage.setItem(FOCUS_KEY, JSON.stringify(wrongCounts));
 }
 
 function initQuiz() {
     quizStack = que.filter(item => !clearSet.has(item.main));
     currentIdx = 0;
     correctCount = 0;
+    totalQuizCount = quizStack.length;
 }
 
 function loadProgress() {
     const saved = localStorage.getItem(STORAGE_KEY);
-    if (!saved) { initQuiz(); return; }
+    const focusSaved = localStorage.getItem(FOCUS_KEY);
+    if (!saved) {
+        initQuiz();
+        if (focusSaved) {
+            wrongCounts = JSON.parse(focusSaved) || {};
+        }
+        return;
+    }
     try {
         const data = JSON.parse(saved);
         quizStack = (data.quizStack || []).filter(item => item && !clearSet.has(item.main));
@@ -41,7 +54,13 @@ function loadProgress() {
         correctCount = data.correctCount || 0;
         totalAttempts = data.totalAttempts || 0;
         wrongCounts = data.wrongCounts || {};
-    } catch (e) { initQuiz(); }
+        if ((!wrongCounts || Object.keys(wrongCounts).length === 0) && focusSaved) {
+            wrongCounts = JSON.parse(focusSaved) || {};
+        }
+        totalQuizCount = typeof data.totalQuizCount === 'number' ? data.totalQuizCount : quizStack.length;
+    } catch (e) {
+        initQuiz();
+    }
 }
 
 // --- 2. 집중 문제 모드 ---
@@ -49,17 +68,44 @@ function loadProgress() {
 window.toggleFocusMode = () => {
     focusMode = !focusMode;
     const focusBtn = document.getElementById('focusBtn');
+    
     if (focusMode) {
+        savedNormalState = {
+            quizStack: [...quizStack],
+            currentIdx,
+            correctCount,
+            totalAttempts,
+            totalQuizCount,
+        };
         quizStack = que.filter(item => (wrongCounts[item.main] || 0) >= 3);
+        totalQuizCount = quizStack.length;
+        currentIdx = 0;
+        correctCount = 0;
+        totalAttempts = 0;
         focusBtn.textContent = "전체 문제 보기";
         focusBtn.style.background = "#ff4b2b";
     } else {
-        initQuiz();
+        if (savedNormalState) {
+            const restoredStack = savedNormalState.quizStack.filter(item => !clearSet.has(item.main));
+            const removedBefore = savedNormalState.quizStack
+                .slice(0, savedNormalState.currentIdx)
+                .filter(item => clearSet.has(item.main)).length;
+            quizStack = restoredStack;
+            if (quizStack.length === 0) {
+                currentIdx = 0;
+            } else {
+                currentIdx = Math.min(Math.max(savedNormalState.currentIdx - removedBefore, 0), quizStack.length - 1);
+            }
+            correctCount = savedNormalState.correctCount;
+            totalAttempts = savedNormalState.totalAttempts;
+            totalQuizCount = savedNormalState.totalQuizCount;
+            savedNormalState = null;
+        } else {
+            initQuiz();
+        }
         focusBtn.textContent = "집중 문제 풀기 (♣3↑)";
         focusBtn.style.background = "#444";
     }
-    currentIdx = 0;
-    correctCount = 0;
     renderNextCard();
 };
 
@@ -76,6 +122,7 @@ function getRandomDistractors(excludeArray, count) {
 function prepareChoices(q) {
     if (q.fixedChoices) return;
     const originalAnswers = Array.isArray(q.answer) ? q.answer.map(String) : [String(q.answer)];
+    
     if (q.type === 'ox') {
         q.fixedChoices = ['O', 'X'];
         q.fixedAnswers = originalAnswers;
@@ -128,21 +175,16 @@ function renderNextCard() {
     clearLabel.style.cssText = 'font-size:12px; color:#2ecc71; cursor:pointer; font-weight:bold;';
     clearLabel.innerHTML = `<input type="checkbox" id="clearChk"> 확실해!`;
     const chk = clearLabel.querySelector('input');
-    if (clearSet.has(q.main)) chk.checked = true;
+    chk.checked = clearSet.has(q.main);
+    q.pendingClear = chk.checked;
     
-    // [수정사항 4] 확실해 체크 시 실시간으로 전체 length 값 수정
     chk.onchange = (e) => {
         e.stopPropagation();
-        if (chk.checked) {
-            clearSet.add(q.main);
-            // 현재 문제 이후의 목록에서 해당 문제를 즉시 제거
-            quizStack = quizStack.filter((item, idx) => idx <= currentIdx || item.main !== q.main);
-        } else {
+        q.pendingClear = chk.checked;
+        if (!chk.checked && clearSet.has(q.main)) {
             clearSet.delete(q.main);
-            // 필요 시 다시 목록에 추가하는 로직 가능 (여기선 제거 취소만 반영)
+            localStorage.setItem(CLEAR_KEY, JSON.stringify([...clearSet]));
         }
-        localStorage.setItem(CLEAR_KEY, JSON.stringify([...clearSet]));
-        updateUI(); // 카운터 분모를 즉시 갱신
     };
 
     topBar.appendChild(cloverContainer);
@@ -187,6 +229,7 @@ function renderNextCard() {
     stage.appendChild(card);
 }
 
+// (setupBlankLogic, setupMultiSelectLogic 생략 - 이전 답변과 동일)
 function setupBlankLogic(card, realAnswersInOrder, questionData) {
     const multiBtns = card.querySelectorAll('.multi-btn');
     const holes = card.querySelectorAll('.hole');
@@ -238,7 +281,9 @@ function setupMultiSelectLogic(card, correctList, questionData) {
     };
 }
 
-// --- 5. 결과 처리 ---
+// --- 5. 결과 처리 (확실해 검증) ---
+
+// --- 5. 결과 처리 (수정 버전) ---
 
 function handleResult(isSuccess, questionData, correctToHighlight, userSelections = []) {
     animating = true;
@@ -247,27 +292,56 @@ function handleResult(isSuccess, questionData, correctToHighlight, userSelection
     const badge = card.querySelector('.result-badge');
     const allBtns = card.querySelectorAll('.choice-btn, .multi-btn, #submitBtn');
     
+    // 버튼 색상 변경 (정답/오답 시각화)
     allBtns.forEach(btn => {
         btn.style.pointerEvents = 'none';
         if (correctToHighlight.includes(btn.textContent)) btn.classList.add('correct');
         else if (userSelections.includes(btn.textContent)) btn.classList.add('wrong');
     });
 
-    badge.textContent = isSuccess ? '⭕' : '❌';
-    badge.classList.add('show');
+    // [추가] 틀렸을 때 BLANK 타입이면 빈칸에 정답을 채워줌
+    if (!isSuccess && questionData.type === 'blank') {
+        const holes = card.querySelectorAll('.hole');
+        holes.forEach((hole, idx) => {
+            hole.textContent = correctToHighlight[idx]; // 실제 정답 배열에서 가져옴
+            hole.style.color = "#2ecc71"; // 정답 색상으로 변경
+            hole.style.fontWeight = "bold";
+        });
+    }
 
-    // [수정사항 3] O/X 표시 500ms 후 사라지게 수정
-    setTimeout(() => {
-        badge.classList.remove('show');
-    }, 500);
+    const wantsClear = questionData.pendingClear || clearSet.has(questionData.main);
+    const isClearSuccess = isSuccess && wantsClear;
 
     if (isSuccess) {
-        // [수정사항 1] 맞았을 때만 count++ (틀린 경우 통과)
-        correctCount++;
+        if (wantsClear) {
+            clearSet.add(questionData.main);
+            localStorage.setItem(CLEAR_KEY, JSON.stringify([...clearSet]));
+        }
+        if (focusMode && savedNormalState) {
+            const solvedIndex = savedNormalState.quizStack.findIndex(item => item.main === questionData.main);
+            if (solvedIndex !== -1) {
+                savedNormalState.quizStack.splice(solvedIndex, 1);
+                if (solvedIndex <= savedNormalState.currentIdx && savedNormalState.currentIdx > 0) {
+                    savedNormalState.currentIdx--;
+                }
+                savedNormalState.totalQuizCount = Math.max((savedNormalState.totalQuizCount || savedNormalState.quizStack.length) - 1, 0);
+            }
+        }
+        if (!isClearSuccess) {
+            correctCount++;
+        } else if (!focusMode) {
+            totalQuizCount = Math.max(totalQuizCount - 1, 0);
+        }
+        badge.textContent = '⭕';
+        badge.className += ' show';
+        
+        // 500ms 후에 자동으로 다음 카드로 이동
         setTimeout(() => {
+            badge.classList.remove('show'); // 배지 숨기기
             card.classList.add('fly-away');
             setTimeout(proceedToNext, 600);
-        }, 600);
+        }, 500); 
+
     } else {
         wrongCounts[questionData.main] = (wrongCounts[questionData.main] || 0) + 1;
         
@@ -276,20 +350,18 @@ function handleResult(isSuccess, questionData, correctToHighlight, userSelection
             localStorage.setItem(CLEAR_KEY, JSON.stringify([...clearSet]));
         }
 
-        // [수정사항 2] Blank 틀렸을 때 빈칸에 맞는 답 나오게 수정
-        if (questionData.type === 'blank') {
-            const holes = card.querySelectorAll('.hole');
-            holes.forEach((hole, idx) => {
-                hole.textContent = correctToHighlight[idx];
-                hole.style.color = "#2ecc71";
-                hole.style.borderBottom = "2px solid #2ecc71";
-            });
-        }
-
         quizStack.push(questionData);
+        badge.textContent = '❌';
+        badge.className += ' show';
+
+        // 오답일 경우 배지는 500ms 후에 사라지지만, 
+        // 사용자가 정답을 확인해야 하므로 카드는 클릭해야 넘어가도록 유지
+        setTimeout(() => {
+            badge.classList.remove('show');
+        }, 500);
 
         const guide = document.createElement('div');
-        guide.innerHTML = "틀렸습니다! (확실해 해제)<br>터치하여 계속";
+        guide.innerHTML = "틀렸습니다! (정답 확인 후 터치)";
         guide.style.cssText = "font-size:12px; color:#ff4b2b; margin-top:15px; text-align:center; font-weight:bold;";
         card.appendChild(guide);
 
@@ -309,31 +381,36 @@ function handleResult(isSuccess, questionData, correctToHighlight, userSelection
 
 function updateUI() {
     if (!progressBar || !counter) return;
-    const total = quizStack.length; 
-    const progress = total === 0 ? 0 : Math.min((currentIdx / total) * 100, 100);
+    const total = typeof totalQuizCount === 'number' ? totalQuizCount : quizStack.length;
+    const progress = total === 0 ? 0 : Math.min((correctCount / total) * 100, 100);
     progressBar.style.width = `${progress}%`;
-    // [수정사항 4 연결] 줄어든 quizStack.length가 실시간 반영됨
     counter.textContent = `${correctCount} / ${total}`;
     if (correctDisplay) correctDisplay.textContent = correctCount;
 }
 
-// --- 6. 종료 화면 및 데이터 출력 ---
+// --- 6. 종료 화면 및 확실해 데이터 출력 (추가된 부분) ---
 
 function showDone() {
     stage.style.display = 'none';
     const doneScreen = document.getElementById('doneScreen');
     if (!doneScreen) return;
+    
     doneScreen.classList.add('visible');
+
+    // 1. 확실해! 목록을 배열로 추출 (띄어쓰기 등 원본 유지)
     const confirmedMains = Array.from(clearSet);
 
     if (confirmedMains.length > 0) {
         const clearArea = document.createElement('div');
         clearArea.style.cssText = 'margin-top:20px; padding:15px; background:#f0fff4; border:1px solid #c6f6d5; border-radius:10px;';
+        
+        // 2. 결과 화면에 배열 형태 텍스트 출력
         clearArea.innerHTML = `
             <p style="font-weight:bold; color:#2f855a; margin-bottom:10px;">✅ 확실해! 완료된 목록 (${confirmedMains.length}건)</p>
             <textarea readonly style="width:100%; height:100px; padding:10px; font-family:monospace; font-size:12px; border:1px solid #ddd; border-radius:5px; background:#fff;">${JSON.stringify(confirmedMains, null, 2)}</textarea>
             <button id="copyBtn" style="margin-top:10px; width:100%; padding:8px; background:#2f855a; color:white; border:none; border-radius:5px; cursor:pointer;">배열 데이터 복사</button>
         `;
+        
         doneScreen.appendChild(clearArea);
 
         document.getElementById('copyBtn').onclick = function() {
@@ -352,12 +429,30 @@ document.addEventListener('DOMContentLoaded', () => {
     loadProgress();
     renderNextCard();
     
-    document.getElementById('resetBtn').onclick = () => {
-        if (confirm("진행 기록을 초기화합니다. (확실해! 목록은 유지됩니다)")) {
-            localStorage.removeItem(STORAGE_KEY);
-            location.reload();
-        }
-    };
+    const recordResetBtn = document.getElementById('recordResetBtn');
+    if (recordResetBtn) {
+        recordResetBtn.onclick = () => {
+            if (confirm("학습 기록을 초기화합니다. (확실해! 체크와 집중 문제 목록은 유지됩니다)")) {
+                localStorage.removeItem(STORAGE_KEY);
+                location.reload();
+            }
+        };
+    }
+
+    const fullResetBtn = document.getElementById('fullResetBtn');
+    if (fullResetBtn) {
+        fullResetBtn.onclick = () => {
+            if (confirm("기록 리셋을 실행합니다. 모든 데이터가 초기화됩니다.")) {
+                localStorage.removeItem(STORAGE_KEY);
+                localStorage.removeItem(CLEAR_KEY);
+                localStorage.removeItem(FOCUS_KEY);
+                location.reload();
+            }
+        };
+    }
 });
 
-window.restart = () => { localStorage.removeItem(STORAGE_KEY); location.reload(); };
+window.restart = () => { 
+    localStorage.removeItem(STORAGE_KEY);
+    location.reload(); 
+};
