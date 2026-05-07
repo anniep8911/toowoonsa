@@ -2,6 +2,7 @@ import { que } from './card_data.js';
 
 const STORAGE_KEY = 'quiz_system_v22_final';
 const CLEAR_KEY = 'quiz_clear_list';
+const CONFUSED_KEY = 'quiz_confused_list';
 const FOCUS_KEY = 'quiz_focus_counts';
 
 let quizStack = [];
@@ -13,7 +14,8 @@ let wrongCounts = {};
 let totalQuizCount = 0;
 let savedNormalState = null;
 // '확실해!' 목록 (리셋해도 유지됨)
-let clearSet = new Set(JSON.parse(localStorage.getItem(CLEAR_KEY) || '[]')); 
+let clearSet = new Set(JSON.parse(localStorage.getItem(CLEAR_KEY) || '[]'));
+let confusedSet = new Set(JSON.parse(localStorage.getItem(CONFUSED_KEY) || '[]'));
 let focusMode = false; 
 
 const stage = document.getElementById('stage');
@@ -27,6 +29,7 @@ function saveProgress() {
     const data = { quizStack, currentIdx, correctCount, totalAttempts, wrongCounts, totalQuizCount };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
     localStorage.setItem(CLEAR_KEY, JSON.stringify([...clearSet]));
+    localStorage.setItem(CONFUSED_KEY, JSON.stringify([...confusedSet]));
     localStorage.setItem(FOCUS_KEY, JSON.stringify(wrongCounts));
 }
 
@@ -170,7 +173,7 @@ function renderNextCard() {
     card.className = 'card active';
 
     const topBar = document.createElement('div');
-    topBar.style.cssText = 'display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;';
+    topBar.style.cssText =  'text-align:right';
 
     const cloverContainer = document.createElement('div');
     const wCount = wrongCounts[q.main] || 0;
@@ -182,23 +185,46 @@ function renderNextCard() {
     }
 
     const clearLabel = document.createElement('label');
-    clearLabel.style.cssText = 'font-size:12px; color:#2ecc71; cursor:pointer; font-weight:bold;';
+    const confusedLabel = document.createElement('label');
+
+    clearLabel.style.cssText = 'font-size:12px; color:#2ecc71; cursor:pointer; font-weight:bold; margin-right:10px;';
     clearLabel.innerHTML = `<input type="checkbox" id="clearChk"> 확실해!`;
-    const chk = clearLabel.querySelector('input');
-    chk.checked = clearSet.has(q.main);
-    q.pendingClear = chk.checked;
+    confusedLabel.style.cssText = 'font-size:12px; color:#ffb547; cursor:pointer; font-weight:bold;';
+    confusedLabel.innerHTML = `<input type="checkbox" id="confusedChk"> 햇갈려ㅠㅠ`;
+
+    const clearChk = clearLabel.querySelector('input');
+    const confusedChk = confusedLabel.querySelector('input');
+
+    clearChk.checked = clearSet.has(q.main);
+    confusedChk.checked = confusedSet.has(q.main);
+    q.pendingClear = clearChk.checked;
+    q.pendingConfused = confusedChk.checked;
     
-    chk.onchange = (e) => {
+    clearChk.onchange = (e) => {
         e.stopPropagation();
-        q.pendingClear = chk.checked;
-        if (!chk.checked && clearSet.has(q.main)) {
+        q.pendingClear = clearChk.checked;
+        if (clearChk.checked) {
+            clearSet.add(q.main);
+        } else if (clearSet.has(q.main)) {
             clearSet.delete(q.main);
-            localStorage.setItem(CLEAR_KEY, JSON.stringify([...clearSet]));
         }
+        localStorage.setItem(CLEAR_KEY, JSON.stringify([...clearSet]));
+    };
+
+    confusedChk.onchange = (e) => {
+        e.stopPropagation();
+        q.pendingConfused = confusedChk.checked;
+        if (confusedChk.checked) {
+            confusedSet.add(q.main);
+        } else if (confusedSet.has(q.main)) {
+            confusedSet.delete(q.main);
+        }
+        localStorage.setItem(CONFUSED_KEY, JSON.stringify([...confusedSet]));
     };
 
     topBar.appendChild(cloverContainer);
     topBar.appendChild(clearLabel);
+    topBar.appendChild(confusedLabel);
     card.appendChild(topBar);
 
     if (q.type === 'ox') {
@@ -417,7 +443,6 @@ function showDone() {
         const clearArea = document.createElement('div');
         clearArea.style.cssText = 'margin-top:20px; padding:15px; background:#f0fff4; border:1px solid #c6f6d5; border-radius:10px;';
         
-        // 2. 결과 화면에 배열 형태 텍스트 출력
         clearArea.innerHTML = `
             <p style="font-weight:bold; color:#2f855a; margin-bottom:10px;">✅ 확실해! 완료된 목록 (${confirmedMains.length}건)</p>
             <textarea readonly style="width:100%; height:100px; padding:10px; font-family:monospace; font-size:12px; border:1px solid #ddd; border-radius:5px; background:#fff;">${JSON.stringify(confirmedMains, null, 2)}</textarea>
@@ -433,6 +458,23 @@ function showDone() {
             this.textContent = "복사되었습니다!";
             setTimeout(() => this.textContent = "배열 데이터 복사", 2000);
         };
+    }
+
+    const confusedEntries = Array.from(confusedSet)
+        .map(main => {
+            const item = que.find(entry => entry.main === main);
+            return item ? item.sentence || item.main : main;
+        })
+        .filter(Boolean);
+
+    if (confusedEntries.length > 0) {
+        const confusedArea = document.createElement('div');
+        confusedArea.style.cssText = 'margin-top:20px; padding:15px; background:#fff7ed; border:1px solid #f5c26b; border-radius:10px; white-space:pre-wrap; line-height:1.6;';
+        confusedArea.innerHTML = `
+            <p style="font-weight:bold; color:#dd6b20; margin-bottom:10px;">😕 햇갈려ㅠㅠ 체크된 문장 목록</p>
+            ${confusedEntries.map(text => `<div style="margin-bottom:8px;">${text}</div>`).join('')}
+        `;
+        doneScreen.appendChild(confusedArea);
     }
 }
 
