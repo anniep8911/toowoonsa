@@ -9,7 +9,6 @@ let correctCount = 0;
 let totalAttempts = 0;
 let animating = false;
 let wrongCounts = {}; 
-// '확실해!' 목록 (리셋해도 유지됨)
 let clearSet = new Set(JSON.parse(localStorage.getItem(CLEAR_KEY) || '[]')); 
 let focusMode = false; 
 
@@ -34,10 +33,7 @@ function initQuiz() {
 
 function loadProgress() {
     const saved = localStorage.getItem(STORAGE_KEY);
-    if (!saved) {
-        initQuiz();
-        return;
-    }
+    if (!saved) { initQuiz(); return; }
     try {
         const data = JSON.parse(saved);
         quizStack = (data.quizStack || []).filter(item => item && !clearSet.has(item.main));
@@ -45,9 +41,7 @@ function loadProgress() {
         correctCount = data.correctCount || 0;
         totalAttempts = data.totalAttempts || 0;
         wrongCounts = data.wrongCounts || {};
-    } catch (e) {
-        initQuiz();
-    }
+    } catch (e) { initQuiz(); }
 }
 
 // --- 2. 집중 문제 모드 ---
@@ -55,7 +49,6 @@ function loadProgress() {
 window.toggleFocusMode = () => {
     focusMode = !focusMode;
     const focusBtn = document.getElementById('focusBtn');
-    
     if (focusMode) {
         quizStack = que.filter(item => (wrongCounts[item.main] || 0) >= 3);
         focusBtn.textContent = "전체 문제 보기";
@@ -83,7 +76,6 @@ function getRandomDistractors(excludeArray, count) {
 function prepareChoices(q) {
     if (q.fixedChoices) return;
     const originalAnswers = Array.isArray(q.answer) ? q.answer.map(String) : [String(q.answer)];
-    
     if (q.type === 'ox') {
         q.fixedChoices = ['O', 'X'];
         q.fixedAnswers = originalAnswers;
@@ -138,11 +130,19 @@ function renderNextCard() {
     const chk = clearLabel.querySelector('input');
     if (clearSet.has(q.main)) chk.checked = true;
     
+    // [수정사항 4] 확실해 체크 시 실시간으로 전체 length 값 수정
     chk.onchange = (e) => {
         e.stopPropagation();
-        if (chk.checked) clearSet.add(q.main);
-        else clearSet.delete(q.main);
+        if (chk.checked) {
+            clearSet.add(q.main);
+            // 현재 문제 이후의 목록에서 해당 문제를 즉시 제거
+            quizStack = quizStack.filter((item, idx) => idx <= currentIdx || item.main !== q.main);
+        } else {
+            clearSet.delete(q.main);
+            // 필요 시 다시 목록에 추가하는 로직 가능 (여기선 제거 취소만 반영)
+        }
         localStorage.setItem(CLEAR_KEY, JSON.stringify([...clearSet]));
+        updateUI(); // 카운터 분모를 즉시 갱신
     };
 
     topBar.appendChild(cloverContainer);
@@ -187,7 +187,6 @@ function renderNextCard() {
     stage.appendChild(card);
 }
 
-// (setupBlankLogic, setupMultiSelectLogic 생략 - 이전 답변과 동일)
 function setupBlankLogic(card, realAnswersInOrder, questionData) {
     const multiBtns = card.querySelectorAll('.multi-btn');
     const holes = card.querySelectorAll('.hole');
@@ -239,7 +238,7 @@ function setupMultiSelectLogic(card, correctList, questionData) {
     };
 }
 
-// --- 5. 결과 처리 (확실해 검증) ---
+// --- 5. 결과 처리 ---
 
 function handleResult(isSuccess, questionData, correctToHighlight, userSelections = []) {
     animating = true;
@@ -254,26 +253,40 @@ function handleResult(isSuccess, questionData, correctToHighlight, userSelection
         else if (userSelections.includes(btn.textContent)) btn.classList.add('wrong');
     });
 
+    badge.textContent = isSuccess ? '⭕' : '❌';
+    badge.classList.add('show');
+
+    // [수정사항 3] O/X 표시 500ms 후 사라지게 수정
+    setTimeout(() => {
+        badge.classList.remove('show');
+    }, 500);
+
     if (isSuccess) {
+        // [수정사항 1] 맞았을 때만 count++ (틀린 경우 통과)
         correctCount++;
-        badge.textContent = '⭕';
-        badge.className += ' show';
         setTimeout(() => {
             card.classList.add('fly-away');
             setTimeout(proceedToNext, 600);
-        }, 400);
+        }, 600);
     } else {
         wrongCounts[questionData.main] = (wrongCounts[questionData.main] || 0) + 1;
         
-        // 장담했는데 틀렸다면 '확실해'에서 즉시 탈락
         if (clearSet.has(questionData.main)) {
             clearSet.delete(questionData.main);
             localStorage.setItem(CLEAR_KEY, JSON.stringify([...clearSet]));
         }
 
+        // [수정사항 2] Blank 틀렸을 때 빈칸에 맞는 답 나오게 수정
+        if (questionData.type === 'blank') {
+            const holes = card.querySelectorAll('.hole');
+            holes.forEach((hole, idx) => {
+                hole.textContent = correctToHighlight[idx];
+                hole.style.color = "#2ecc71";
+                hole.style.borderBottom = "2px solid #2ecc71";
+            });
+        }
+
         quizStack.push(questionData);
-        badge.textContent = '❌';
-        badge.className += ' show';
 
         const guide = document.createElement('div');
         guide.innerHTML = "틀렸습니다! (확실해 해제)<br>터치하여 계속";
@@ -299,33 +312,28 @@ function updateUI() {
     const total = quizStack.length; 
     const progress = total === 0 ? 0 : Math.min((currentIdx / total) * 100, 100);
     progressBar.style.width = `${progress}%`;
-    counter.textContent = `${currentIdx} / ${total}`;
+    // [수정사항 4 연결] 줄어든 quizStack.length가 실시간 반영됨
+    counter.textContent = `${correctCount} / ${total}`;
     if (correctDisplay) correctDisplay.textContent = correctCount;
 }
 
-// --- 6. 종료 화면 및 확실해 데이터 출력 (추가된 부분) ---
+// --- 6. 종료 화면 및 데이터 출력 ---
 
 function showDone() {
     stage.style.display = 'none';
     const doneScreen = document.getElementById('doneScreen');
     if (!doneScreen) return;
-    
     doneScreen.classList.add('visible');
-
-    // 1. 확실해! 목록을 배열로 추출 (띄어쓰기 등 원본 유지)
     const confirmedMains = Array.from(clearSet);
 
     if (confirmedMains.length > 0) {
         const clearArea = document.createElement('div');
         clearArea.style.cssText = 'margin-top:20px; padding:15px; background:#f0fff4; border:1px solid #c6f6d5; border-radius:10px;';
-        
-        // 2. 결과 화면에 배열 형태 텍스트 출력
         clearArea.innerHTML = `
             <p style="font-weight:bold; color:#2f855a; margin-bottom:10px;">✅ 확실해! 완료된 목록 (${confirmedMains.length}건)</p>
             <textarea readonly style="width:100%; height:100px; padding:10px; font-family:monospace; font-size:12px; border:1px solid #ddd; border-radius:5px; background:#fff;">${JSON.stringify(confirmedMains, null, 2)}</textarea>
             <button id="copyBtn" style="margin-top:10px; width:100%; padding:8px; background:#2f855a; color:white; border:none; border-radius:5px; cursor:pointer;">배열 데이터 복사</button>
         `;
-        
         doneScreen.appendChild(clearArea);
 
         document.getElementById('copyBtn').onclick = function() {
