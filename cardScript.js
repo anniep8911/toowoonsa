@@ -49,8 +49,18 @@ function loadProgress() {
     }
     try {
         const data = JSON.parse(saved);
-        quizStack = (data.quizStack || []).filter(item => item && !clearSet.has(item.main));
+        const savedStack = (data.quizStack || []).filter(item => item);
+        quizStack = savedStack.filter(item => !clearSet.has(item.main));
         currentIdx = data.currentIdx || 0;
+        if (currentIdx > 0) {
+            const removedBefore = savedStack
+                .slice(0, currentIdx)
+                .filter(item => clearSet.has(item.main)).length;
+            currentIdx = Math.max(0, currentIdx - removedBefore);
+        }
+        if (currentIdx >= quizStack.length) {
+            currentIdx = Math.max(0, quizStack.length - 1);
+        }
         correctCount = data.correctCount || 0;
         totalAttempts = data.totalAttempts || 0;
         wrongCounts = data.wrongCounts || {};
