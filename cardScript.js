@@ -512,3 +512,16 @@ window.restart = () => {
     localStorage.removeItem(STORAGE_KEY);
     location.reload(); 
 };
+
+javascript:(()=>{
+const box=document.createElement('div');
+box.style.cssText="position:fixed;top:0;left:0;width:100%;height:100%;background:#000;color:#0f0;font-size:12px;overflow:auto;z-index:999999;padding:10px;white-space:pre-wrap;";
+let out="";
+for(let i=0;i<localStorage.length;i++){
+  const k=localStorage.key(i);
+  out+=k+" : "+localStorage.getItem(k)+"\n\n";
+}
+box.textContent=out||"localStorage empty";
+document.body.innerHTML="";
+document.body.appendChild(box);
+})();
