@@ -514,14 +514,22 @@ window.restart = () => {
 };
 
 javascript:(()=>{
-const box=document.createElement('div');
-box.style.cssText="position:fixed;top:0;left:0;width:100%;height:100%;background:#000;color:#0f0;font-size:12px;overflow:auto;z-index:999999;padding:10px;white-space:pre-wrap;";
-let out="";
-for(let i=0;i<localStorage.length;i++){
-  const k=localStorage.key(i);
-  out+=k+" : "+localStorage.getItem(k)+"\n\n";
-}
-box.textContent=out||"localStorage empty";
-document.body.innerHTML="";
+const raw = JSON.parse(localStorage.getItem('quiz_confused_list') || '[]');
+
+const sentences = raw.map(main => {
+  const item = (typeof que !== 'undefined') ? que.find(q => q.main === main) : null;
+  return item ? item.sentence : main;
+}).filter(Boolean);
+
+const text = sentences.join('\n');
+
+const box = document.createElement('textarea');
+box.style.cssText = "position:fixed;top:0;left:0;width:100%;height:100%;font-size:12px;padding:10px;z-index:999999;";
+box.value = text;
+
+document.body.innerHTML = "";
 document.body.appendChild(box);
+
+box.focus();
+box.select();
 })();
