@@ -507,38 +507,3 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 });
-
-javascript:(()=>{
-const raw = JSON.parse(localStorage.getItem('quiz_system_v22_final') || '{}');
-
-const quizStack = raw.quizStack || [];
-
-// sentence 추출
-let sentences = quizStack.map(q => q.sentence || q.main || "").filter(Boolean);
-
-// 중복 제거 (핵심)
-sentences = [...new Set(sentences)];
-
-const text = sentences.join('\n');
-
-const box = document.createElement('textarea');
-box.style.cssText = `
-position:fixed;
-top:0;left:0;
-width:100%;height:100%;
-background:#000;
-color:#0f0;
-font-size:12px;
-z-index:999999;
-padding:10px;
-box-sizing:border-box;
-`;
-
-box.value = text;
-
-document.body.innerHTML = "";
-document.body.appendChild(box);
-
-box.focus();
-box.select();
-})();
