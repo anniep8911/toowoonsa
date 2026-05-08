@@ -39,39 +39,28 @@
         <div id="review-list"></div>
     </div>
 
-    <script type="module">
-        import { que } from './card_data.js';
-
-        const CONFUSED_KEY = 'quiz_confused_list';
-        const confusedSet = new Set(JSON.parse(localStorage.getItem(CONFUSED_KEY) || '[]'));
+    <script>
+        const confusedSentences = JSON.parse(localStorage.getItem('confused_sentences') || '[]');
 
         // 디버깅: localStorage 내용 출력
         const debugDiv = document.createElement('div');
         debugDiv.style.cssText = 'margin-bottom:20px; padding:10px; background:#f0f0f0; border:1px solid #ccc;';
         debugDiv.innerHTML = `
             <strong>디버깅 정보:</strong><br>
-            CONFUSED_KEY: ${CONFUSED_KEY}<br>
-            localStorage 값: ${localStorage.getItem(CONFUSED_KEY)}<br>
-            confusedSet 크기: ${confusedSet.size}<br>
-            confusedSet 내용: ${JSON.stringify([...confusedSet])}<br>
-            que 길이: ${que.length}
+            confused_sentences: ${localStorage.getItem('confused_sentences')}<br>
+            배열 길이: ${confusedSentences.length}
         `;
         document.querySelector('.review-container').appendChild(debugDiv);
 
         const reviewList = document.getElementById('review-list');
 
-        if (confusedSet.size === 0) {
+        if (confusedSentences.length === 0) {
             reviewList.innerHTML = '<p class="no-items">아직 햇갈려 체크된 문제가 없습니다. 📚</p>';
         } else {
-            const sentences = Array.from(confusedSet).map(main => {
-                const item = que.find(q => q.main === main);
-                return item ? item.sentence : main;
-            }).filter(Boolean);
-            
             const textarea = document.createElement('textarea');
             textarea.readOnly = true;
             textarea.style.cssText = 'width:100%; height:300px; padding:10px; font-family:monospace; font-size:14px; border:1px solid #ddd; border-radius:5px; background:#fff;';
-            textarea.value = sentences.join('\n\n');
+            textarea.value = confusedSentences.join('\n\n');
             
             const copyBtn = document.createElement('button');
             copyBtn.textContent = '전체 복사';

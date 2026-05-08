@@ -468,6 +468,7 @@ function showDone() {
         .filter(Boolean);
 
     if (confusedEntries.length > 0) {
+        localStorage.setItem('confused_sentences', JSON.stringify(confusedEntries));
         const confusedArea = document.createElement('div');
         confusedArea.style.cssText = 'margin-top:20px; padding:15px; background:#fff7ed; border:1px solid #f5c26b; border-radius:10px; white-space:pre-wrap; line-height:1.6;';
         confusedArea.innerHTML = `
