@@ -16,7 +16,8 @@ const STORAGE_KEY = 'quiz_solved_data';
 let solvedData = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {
     correctIds: [], 
     correctCount: 0,
-    wrongCount: 0
+    wrongCount: 0,
+    wrongIds: []
 };
 
 let currentWrongCount = solvedData.wrongCount; 
@@ -277,6 +278,7 @@ const renderQuiz = () => {
                 }, 500);
             } else {
                 currentWrongCount++;
+                solvedData.wrongIds.push(index); // 틀린 아이디 추가
                 saveProgress();
                 updateHeaderScore(); // 오답 시에도 카운트 반영
                 
