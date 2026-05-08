@@ -45,6 +45,19 @@
         const CONFUSED_KEY = 'quiz_confused_list';
         const confusedSet = new Set(JSON.parse(localStorage.getItem(CONFUSED_KEY) || '[]'));
 
+        // 디버깅: localStorage 내용 출력
+        const debugDiv = document.createElement('div');
+        debugDiv.style.cssText = 'margin-bottom:20px; padding:10px; background:#f0f0f0; border:1px solid #ccc;';
+        debugDiv.innerHTML = `
+            <strong>디버깅 정보:</strong><br>
+            CONFUSED_KEY: ${CONFUSED_KEY}<br>
+            localStorage 값: ${localStorage.getItem(CONFUSED_KEY)}<br>
+            confusedSet 크기: ${confusedSet.size}<br>
+            confusedSet 내용: ${JSON.stringify([...confusedSet])}<br>
+            que 길이: ${que.length}
+        `;
+        document.querySelector('.review-container').appendChild(debugDiv);
+
         const reviewList = document.getElementById('review-list');
 
         if (confusedSet.size === 0) {
