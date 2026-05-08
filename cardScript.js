@@ -508,23 +508,32 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-window.restart = () => { 
-    localStorage.removeItem(STORAGE_KEY);
-    location.reload(); 
-};
-
 javascript:(()=>{
-const raw = JSON.parse(localStorage.getItem('quiz_confused_list') || '[]');
+const raw = JSON.parse(localStorage.getItem('quiz_system_v22_final') || '{}');
 
-const sentences = raw.map(main => {
-  const item = (typeof que !== 'undefined') ? que.find(q => q.main === main) : null;
-  return item ? item.sentence : main;
-}).filter(Boolean);
+const quizStack = raw.quizStack || [];
+
+// sentence 추출
+let sentences = quizStack.map(q => q.sentence || q.main || "").filter(Boolean);
+
+// 중복 제거 (핵심)
+sentences = [...new Set(sentences)];
 
 const text = sentences.join('\n');
 
 const box = document.createElement('textarea');
-box.style.cssText = "position:fixed;top:0;left:0;width:100%;height:100%;font-size:12px;padding:10px;z-index:999999;";
+box.style.cssText = `
+position:fixed;
+top:0;left:0;
+width:100%;height:100%;
+background:#000;
+color:#0f0;
+font-size:12px;
+z-index:999999;
+padding:10px;
+box-sizing:border-box;
+`;
+
 box.value = text;
 
 document.body.innerHTML = "";
