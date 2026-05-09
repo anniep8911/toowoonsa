@@ -90,7 +90,7 @@ window.toggleFocusMode = () => {
             totalAttempts,
             totalQuizCount,
         };
-        quizStack = que.filter(item => (wrongCounts[item.main] || 0) >= 3);
+        quizStack = que.filter(item => (wrongCounts[item.main] || 0) >= 1);
         totalQuizCount = quizStack.length;
         currentIdx = 0;
         correctCount = 0;
@@ -116,7 +116,7 @@ window.toggleFocusMode = () => {
         } else {
             initQuiz();
         }
-        focusBtn.textContent = "집중 문제 풀기 (♣3↑)";
+        focusBtn.textContent = "집중 문제 풀기";
         focusBtn.style.background = "#444";
     }
     renderNextCard();
@@ -317,7 +317,7 @@ function setupMultiSelectLogic(card, correctList, questionData) {
     };
 }
 
-// --- 5. 결과 처리 (확실해 검증) ---
+
 
 // --- 5. 결과 처리 (수정 버전) ---
 
