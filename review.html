@@ -3,53 +3,81 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Confused Sentence Export</title>
+<title>Clover Sentence Export</title>
+
 <style>
-body {
-  font-size: 12px;
-  font-family: Arial, sans-serif;
-  margin: 0;
-  padding: 10px;
+body{
+  font-size:12px;
+  font-family:Arial,sans-serif;
+  margin:0;
+  padding:10px;
 }
-button {
-  margin: 5px 0;
-  padding: 8px;
-  width: 100%;
+
+button{
+  margin:5px 0;
+  padding:8px;
+  width:100%;
 }
-textarea {
-  width: 100%;
-  height: 70vh;
-  font-size: 12px;
+
+textarea{
+  width:100%;
+  height:70vh;
+  font-size:12px;
 }
 </style>
 </head>
+
 <body>
 
-<h3>Confused Sentence Export Tool</h3>
-<button onclick="loadData()">Load from localStorage</button>
+<h3>♣ Clover Sentence Export</h3>
+
+<button onclick="loadData()">Load Clover Sentences</button>
 <button onclick="copyText()">Copy All</button>
 
-<textarea id="output" placeholder="data will appear here..."></textarea>
+<textarea id="output" placeholder="sentences will appear here..."></textarea>
 
 <script>
-function loadData() {
-  const raw = JSON.parse(localStorage.getItem('quiz_system_v22_final') || '{}');
+
+function loadData(){
+
+  const raw = JSON.parse(
+    localStorage.getItem('quiz_system_v22_final') || '{}'
+  );
+
+  const wrongCounts = raw.wrongCounts || {};
   const quizStack = raw.quizStack || [];
 
-  let sentences = quizStack.map(q => q.sentence || q.main || '').filter(Boolean);
+  // ♣ 1개 이상 main 목록
+  const mains = Object.entries(wrongCounts)
+    .filter(([_, count]) => count >= 1)
+    .map(([main]) => main);
 
-  // remove duplicates
+  // sentence 추출
+  let sentences = quizStack
+    .filter(q => mains.includes(q.main))
+    .map(q => q.sentence || q.main || '')
+    .filter(Boolean);
+
+  // 중복 제거
   sentences = [...new Set(sentences)];
 
-  document.getElementById('output').value = sentences.join('\n');
+  document.getElementById('output').value =
+    sentences.join('\n');
+
 }
 
-function copyText() {
+function copyText(){
+
   const ta = document.getElementById('output');
+
   ta.select();
+
   document.execCommand('copy');
+
   alert('copied');
+
 }
+
 </script>
 
 </body>
