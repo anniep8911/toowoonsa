@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Text Chunker</title>
+<style>
+body { font-size:12px; font-family:sans-serif; padding:10px; }
+button { width:100%; padding:10px; margin:5px 0; }
+textarea { width:100%; height:40vh; font-size:12px; }
+</style>
+</head>
+<body>
+
+<h3>500자 자동 분할</h3>
+
+<textarea id="input" placeholder="여기에 복사한 전체 텍스트 붙여넣기"></textarea>
+
+<button onclick="chunk()">500자 분할</button>
+<button onclick="copyAll()">전체 복사</button>
+
+<textarea id="output" placeholder="결과"></textarea>
+
+<script>
+
+function chunk(){
+  const text = document.getElementById('input').value;
+
+  let chunks = [];
+  let current = "";
+
+  for (let char of text){
+    if ((current + char).length > 500){
+      chunks.push(current);
+      current = "";
+    }
+    current += char;
+  }
+
+  if (current) chunks.push(current);
+
+  document.getElementById('output').value =
+    chunks.join("\n\n-----\n\n");
+}
+
+function copyAll(){
+  const ta = document.getElementById('output');
+  ta.select();
+  document.execCommand('copy');
+  alert("copied");
+}
+
+</script>
+
+</body>
+</html>

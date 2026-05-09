@@ -507,3 +507,51 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 });
+
+
+javascript:(()=>{
+const raw = JSON.parse(localStorage.getItem('quiz_system_v22_final') || '{}');
+
+const wrongCounts = raw.wrongCounts || {};
+
+const filtered = Object.entries(wrongCounts)
+  .filter(([_, count]) => count >= 1)
+  .sort((a,b)=>b[1]-a[1]);
+
+let out = "";
+
+filtered.forEach(([main, count])=>{
+  const item = (typeof que !== 'undefined')
+    ? que.find(q => q.main === main)
+    : null;
+
+  const sentence = item?.sentence || main;
+
+  out += "♣".repeat(count) + " (" + count + ")\n";
+  out += sentence + "\n\n";
+});
+
+const box=document.createElement('textarea');
+
+box.style.cssText=`
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+background:#000;
+color:#0f0;
+font-size:12px;
+z-index:999999;
+padding:10px;
+box-sizing:border-box;
+`;
+
+box.value = out || "no clover data";
+
+document.body.innerHTML="";
+document.body.appendChild(box);
+
+box.focus();
+box.select();
+})();
